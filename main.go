@@ -17,19 +17,23 @@ func Crawl(url string, depth int, fetcher Fetcher, wg *sync.WaitGroup, prevFetch
 	// TODO: Fetch URLs in parallel.
 	// TODO: Don't fetch the same URL twice.
 	// This implementation doesn't do either:
-	mu.Lock()
-	defer mu.Unlock()
 	defer wg.Done()
+
 	if depth <= 0 {
 		return
 	}
+
+	mu.Lock()
 	if _, ok := (*prevFetchedUrls)[url]; ok {
+		mu.Unlock()
 		return
 	}
+	(*prevFetchedUrls)[url] = struct{}{}
+	mu.Unlock()
+
 	body, urls, err := fetcher.Fetch(url)
 	if err != nil {
 		fmt.Println(err)
-		(*prevFetchedUrls)[url] = struct{}{}
 		return
 	}
 	fmt.Printf("found: %s %q\n", url, body)
