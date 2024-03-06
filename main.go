@@ -16,10 +16,8 @@ import (
 
 // Crawl uses fetcher to recursively crawl
 // pages starting with url, to a maximum of depth.
-func Crawl(url string, depth int, fetcher func(string) (string, []string, error), wg *sync.WaitGroup, prevFetchedUrls *map[string]struct{}, mu *sync.Mutex, data *[]byte) {
-	// TODO: Fetch URLs in parallel.
-	// TODO: Don't fetch the same URL twice.
-	// This implementation doesn't do either:
+func Crawl(url string, depth int, fetcher func(string, *sync.Mutex, *[]byte, *map[string]struct{}) (string, []string, error), wg *sync.WaitGroup, prevFetchedUrls *map[string]struct{}, mu *sync.Mutex, data *[]byte) {
+
 	defer wg.Done()
 
 	fmt.Println("Fetching urls from ", url)
@@ -28,18 +26,7 @@ func Crawl(url string, depth int, fetcher func(string) (string, []string, error)
 		return
 	}
 
-	mu.Lock()
-	if _, ok := (*prevFetchedUrls)[url]; ok {
-		// fmt.Print("*******\n\n\n\n\n*******Already Visited*******\n\n\n\n\n*******\n")
-		mu.Unlock()
-		return
-	}
-	*data = append(*data, []byte(url+"\n")...)
-	(*prevFetchedUrls)[url] = struct{}{}
-
-	mu.Unlock()
-
-	_, urls, err := fetcher(url)
+	_, urls, err := fetcher(url, mu, data, prevFetchedUrls)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -58,21 +45,25 @@ func main() {
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	wg.Add(1)
-	Crawl("https://io-academy.uk/", 5, Fetch, &wg, &urls, &mu, &data)
+	Crawl("https://io-academy.uk/", 9, Fetch, &wg, &urls, &mu, &data)
 	wg.Wait()
+	// os.WriteFile("./urls.txt", []byte(fmt.Sprintf("%v", urls)), 0644)
 	os.WriteFile("./urls.txt", data, 0644)
 }
 
-func Fetch(url string) (body string, urls []string, err error) {
+func Fetch(url string, mu *sync.Mutex, data *[]byte, prevFetchedUrls *map[string]struct{}) (body string, urls []string, err error) {
 	var url_list []string
 	c := colly.NewCollector()
+
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		link := e.Attr("href")
-		if len(link) > 5 && link[:5] == "https" {
-			url_list = append(url_list, link)
+		mu.Lock()
+		if _, ok := (*prevFetchedUrls)[url]; !ok {
+			*data = append(*data, []byte(url+"\n")...)
+			(*prevFetchedUrls)[url] = struct{}{}
 		}
-		// Visit link found on page
-		// Only those links are visited which are in AllowedDomains
+		mu.Unlock()
+		link := e.Attr("href")
+		url_list = append(url_list, link)
 	})
 	c.Visit(url)
 	return "", url_list, nil
