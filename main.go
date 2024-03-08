@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/gocolly/colly"
+	"shellycs50.com/crawler/userinterface"
 )
 
 type myFirstFetchStruct struct {
@@ -49,16 +50,22 @@ func Crawl(url string, depth int, fetcher Fetcher, wg *sync.WaitGroup, prevFetch
 }
 
 func main() {
+	// by using a map and a byte slice we gain the ability to efficiently check if a url has been queried before, but
+	// ONLY add it to output.txt if a response is received. However, we are using (in the realm of) double the memory.
+
 	var urls = make(map[string]struct{})
 	var data = []byte("")
 	// using mutex to lock the map, using map for constant time lookups. (previously used slice but with the amount of blocking you could argue quicker with a channel for small datasets but for large datasets a map is quicker.)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var this_is_confusing Fetcher = myFirstFetchStruct{}
+	user_url, intdepth, user_filename := userinterface.GetCrawlArgs()
+	fmt.Print(user_url, intdepth, user_filename)
 	wg.Add(1)
-	Crawl("https://muz.li/blog/60-most-creative-portfolio-websites-of-2023", 5, this_is_confusing, &wg, &urls, &mu, &data)
+	// Crawl("https://muz.li/blog/60-most-creative-portfolio-websites-of-2023", 5, this_is_confusing, &wg, &urls, &mu, &data)
+	Crawl(user_url, intdepth, this_is_confusing, &wg, &urls, &mu, &data)
 	wg.Wait()
-	os.WriteFile("./urls.txt", data, 0644)
+	os.WriteFile(user_filename+".txt", data, 0644)
 }
 
 func (f myFirstFetchStruct) Fetch(url string, mu *sync.Mutex, data *[]byte, prevFetchedUrls *map[string]struct{}) (body string, urls []string, err error) {
