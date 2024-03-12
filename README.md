@@ -3,5 +3,6 @@
 
 This began as a exercise to implement mutual exclusion or channels using a fake crawling function in ['A Tour of Go'](https://go.dev/tour/concurrency/10). 
 
+
 ### Todo: 
-Make the url and depth optional argvs
+Implement mongo db integration indexed on url, as current version is limited to available RAM.  
