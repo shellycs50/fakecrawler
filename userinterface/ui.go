@@ -47,7 +47,7 @@ func isValidFileName(s string) bool {
 	return match
 }
 
-func GetCrawlArgs() (string, int, string) {
+func GetCrawlArgs() (string, int, string, bool) {
 	var ui_errors []error
 	user_url, err := getAnswer("\nEnter Url: ")
 	ui_errors = append(ui_errors, err)
@@ -55,11 +55,24 @@ func GetCrawlArgs() (string, int, string) {
 	ui_errors = append(ui_errors, err)
 	user_filename, err := getAnswer("\nName of Output .txt file: ")
 	ui_errors = append(ui_errors, err)
+	allow_internal_links_input, err := getAnswer("\nAllow Internal Links? (Y/N): ")
+	var allow_internal_links bool
+	ui_errors = append(ui_errors, err)
 	for _, err := range ui_errors {
 		if err != nil {
 			log.Fatalln("Error: ", err)
 		}
 	}
+
+	switch handler := allow_internal_links_input; handler {
+	case "Y", "y": //technically dont need this case
+		allow_internal_links = true
+	case "N", "n":
+		allow_internal_links = false
+	default:
+		allow_internal_links = true
+	}
+
 	isLive, err := urlIsLive(user_url)
 	if err != nil {
 		log.Fatalln(err)
@@ -76,6 +89,6 @@ func GetCrawlArgs() (string, int, string) {
 	if !isValidFileName(user_filename) {
 		log.Fatalln("Error: filename must be alphanumeric")
 	}
-	return user_url, intdepth, user_filename
+	return user_url, intdepth, user_filename, allow_internal_links
 
 }
