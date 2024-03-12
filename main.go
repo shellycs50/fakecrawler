@@ -56,7 +56,7 @@ func main() {
 
 	var urls = make(map[string]struct{})
 	var data = []byte("")
-	// using mutex to lock the map, using map for constant time lookups. (previously used slice but with the amount of blocking you could argue quicker with a channel for small datasets but for large datasets a map is quicker.)
+	// using mutex to lock the map (formally it's locking code that accesses the map), using map for constant time lookups. (previously used slice but with the amount of blocking you could argue quicker with a channel for small datasets but for large datasets a map is quicker.)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var this_is_confusing Fetcher = myFirstFetchStruct{}
